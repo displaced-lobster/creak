@@ -26,7 +26,7 @@ fn main() {
 
         let mut s = String::new();
         let now = time::Instant::now();
-        print!("Have you stood up? (Y/y) ");
+        print!("\nHave you stood up? (Y/y) ");
 
         loop {
             io::stdout().flush().expect("Failed to flush");
