@@ -1,10 +1,11 @@
+#[macro_use]
+extern crate clap;
+extern crate termion;
+
+use notify_rust::Notification;
 use std::io;
 use std::io::Write;
 use std::{thread, time};
-use notify_rust::Notification;
-
-#[macro_use]
-extern crate clap;
 
 fn main() {
     let matches = clap_app!(creak =>
@@ -22,8 +23,8 @@ fn main() {
                     .unwrap();
     let timer = time::Duration::from_secs(duration);
 
-    print!("\x1B[2J");
-    println!("Starting standing routine to run {} minute intervals", duration);
+    clear_and_reset();
+    println!("Starting standing routine to run in {} minute intervals", duration);
 
     loop {
         for _ in 0..60 {
@@ -39,19 +40,34 @@ fn main() {
             match Notification::new()
                 .summary("Creak")
                 .body("Time to stand up.")
+                .appname("creak")
+                .timeout(0)
                 .show() {
                     _ => ()
                 }
         }
 
+        clear_and_reset();
         print!("Stand up! Hit ENTER to continue");
 
         io::stdout().flush().expect("Failed to flush");
         io::stdin().read_line(&mut s).expect("Failed to read user input");
 
-        print!("\x1B[2J");
-        println!("{:?} elapsed after timer expired", now.elapsed());
+        clear_and_reset();
+        println!("{} elapsed after timer expired", time_string(now.elapsed()));
         println!("{} minute timer reset", duration);
     }
 
+}
+
+fn time_string(t: time::Duration) -> std::string::String {
+    let t = t.as_secs();
+    let minutes = t / 60;
+    let seconds = t % 60;
+
+    format!("{} minutes {} seconds", minutes, seconds)
+}
+
+fn clear_and_reset() {
+    print!("{}{}", termion::clear::All, termion::cursor::Goto(1, 1));
 }
