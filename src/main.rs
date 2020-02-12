@@ -23,7 +23,7 @@ fn main() {
     let timer = time::Duration::from_secs(duration);
 
     print!("\x1B[2J");
-    println!("Starting standing routine to run every {} minutes", duration);
+    println!("Starting standing routine to run {} minute intervals", duration);
 
     loop {
         for _ in 0..60 {
@@ -44,14 +44,14 @@ fn main() {
                 }
         }
 
-        print!("\nHave you stood up?");
+        print!("Stand up! Hit ENTER to continue");
 
         io::stdout().flush().expect("Failed to flush");
         io::stdin().read_line(&mut s).expect("Failed to read user input");
 
         print!("\x1B[2J");
         println!("{:?} elapsed after timer expired", now.elapsed());
-        println!("Starting next 15 minute timer");
+        println!("{} minute timer reset", duration);
     }
 
 }
