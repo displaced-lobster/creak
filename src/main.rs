@@ -7,18 +7,23 @@ use notify_rust::Notification;
 extern crate clap;
 
 fn main() {
-    let duration = 1;
     let matches = clap_app!(creak =>
         (version: "0.1.0")
         (author: "Richard Mills <scripts.richard@gmail.com>")
         (about: "A prolonged sitter's best friend")
-        (@arg verbose: -d "Set the level of verbosity")
+        (@arg quiet: -q "Stiffle output")
+        (@arg DURATION: -d --duration +takes_value "Set the sitting duration in minutes")
     ).get_matches();
-    let _verbose = matches.is_present("verbose");
+    let quiet = matches.is_present("quiet");
+    let duration = matches
+                    .value_of("DURATION")
+                    .unwrap_or("15")
+                    .parse()
+                    .unwrap();
     let timer = time::Duration::from_secs(duration);
 
     print!("\x1B[2J");
-    println!("Starting standing routine to run every 15 minutes");
+    println!("Starting standing routine to run every {} minutes", duration);
 
     loop {
         for _ in 0..60 {
@@ -30,11 +35,14 @@ fn main() {
         let mut s = String::new();
         let now = time::Instant::now();
 
-        Notification::new()
-            .summary("Creak")
-            .body("Time to stand up.")
-            .show()
-            .unwrap();
+        if !quiet {
+            Notification::new()
+                .summary("Creak")
+                .body("Time to stand up.")
+                .show()
+                .unwrap();
+        }
+
         print!("\nHave you stood up?");
 
         io::stdout().flush().expect("Failed to flush");
