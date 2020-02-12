@@ -36,11 +36,12 @@ fn main() {
         let now = time::Instant::now();
 
         if !quiet {
-            Notification::new()
+            match Notification::new()
                 .summary("Creak")
                 .body("Time to stand up.")
-                .show()
-                .unwrap();
+                .show() {
+                    _ => ()
+                }
         }
 
         print!("\nHave you stood up?");
