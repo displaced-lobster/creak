@@ -5,9 +5,12 @@ extern crate ctrlc;
 use notify_rust::Notification;
 use std::{process, thread, time};
 use std::sync::{Arc, Mutex};
+use termion::{color, style};
 
 use creak::time_string;
 use creak::terminal::Terminal;
+
+const THRESHOLD: u64 = 120;
 
 fn main() {
     let matches = clap_app!(creak =>
@@ -24,13 +27,14 @@ fn main() {
                     .parse()
                     .unwrap();
     let timer = time::Duration::from_secs(duration);
-    let history: Arc<Mutex<Vec<time::Duration>>> = Arc::new(Mutex::new(Vec::new()));
+    let history: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
+    let ctrlc_history = history.clone();
 
-    let shared_history = history.clone();
     ctrlc::set_handler(move || {
-        for v in shared_history.lock().unwrap().iter() {
-            println!("{:?}", v);
-        }
+        let values = ctrlc_history.lock().unwrap().iter().map(|&e| e).collect();
+
+        Terminal::clear_and_reset();
+        Terminal::generate_chart(values, THRESHOLD);
         process::exit(0);
     }).expect("Failed to set Ctrl-C handler");
 
@@ -61,11 +65,20 @@ fn main() {
         Terminal::wait_input();
         Terminal::clear_and_reset();
 
-        let elapsed = now.elapsed();
+        let elapsed = now.elapsed().as_secs();
 
         history.lock().unwrap().push(elapsed);
 
-        println!("{} elapsed after timer expired", time_string(elapsed));
+        let c;
+
+        if elapsed > THRESHOLD {
+            c = format!("{}", color::Fg(color::Red));
+        } else {
+            c = format!("{}", color::Fg(color::Green))
+        }
+
+        print!("{}{}{}{} ", c, style::Bold, time_string(elapsed), style::Reset);
+        println!("elapsed after timer expired");
         println!("{} minute timer reset", duration);
     }
 }

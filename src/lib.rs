@@ -1,9 +1,6 @@
-use std::time;
-
 pub mod terminal;
 
-pub fn time_string(t: time::Duration) -> std::string::String {
-    let t = t.as_secs();
+pub fn time_string(t: u64) -> std::string::String {
     let minutes = t / 60;
     let seconds = t % 60;
 
