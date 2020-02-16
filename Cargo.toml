@@ -8,5 +8,6 @@ edition = "2018"
 
 [dependencies]
 clap = "2"
+ctrlc = "3"
 notify-rust = "3"
 termion = "*"

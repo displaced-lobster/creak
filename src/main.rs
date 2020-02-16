@@ -1,11 +1,13 @@
 #[macro_use]
 extern crate clap;
-extern crate termion;
+extern crate ctrlc;
 
 use notify_rust::Notification;
-use std::io;
-use std::io::Write;
-use std::{thread, time};
+use std::{process, thread, time};
+use std::sync::{Arc, Mutex};
+
+use creak::time_string;
+use creak::terminal::Terminal;
 
 fn main() {
     let matches = clap_app!(creak =>
@@ -22,18 +24,25 @@ fn main() {
                     .parse()
                     .unwrap();
     let timer = time::Duration::from_secs(duration);
+    let history: Arc<Mutex<Vec<time::Duration>>> = Arc::new(Mutex::new(Vec::new()));
 
-    clear_and_reset();
+    let shared_history = history.clone();
+    ctrlc::set_handler(move || {
+        for v in shared_history.lock().unwrap().iter() {
+            println!("{:?}", v);
+        }
+        process::exit(0);
+    }).expect("Failed to set Ctrl-C handler");
+
+    Terminal::clear_and_reset();
     println!("Starting standing routine to run in {} minute intervals", duration);
 
     loop {
         for _ in 0..60 {
             thread::sleep(timer);
-            print!(".");
-            io::stdout().flush().expect("Failed to flush");
+            Terminal::print_and_flush(".");
         }
 
-        let mut s = String::new();
         let now = time::Instant::now();
 
         if !quiet {
@@ -47,27 +56,16 @@ fn main() {
                 }
         }
 
-        clear_and_reset();
-        print!("Stand up! Hit ENTER to continue");
+        Terminal::clear_and_reset();
+        Terminal::print_and_flush("Stand up! Hit ENTER to continue");
+        Terminal::wait_input();
+        Terminal::clear_and_reset();
 
-        io::stdout().flush().expect("Failed to flush");
-        io::stdin().read_line(&mut s).expect("Failed to read user input");
+        let elapsed = now.elapsed();
 
-        clear_and_reset();
-        println!("{} elapsed after timer expired", time_string(now.elapsed()));
+        history.lock().unwrap().push(elapsed);
+
+        println!("{} elapsed after timer expired", time_string(elapsed));
         println!("{} minute timer reset", duration);
     }
-
-}
-
-fn time_string(t: time::Duration) -> std::string::String {
-    let t = t.as_secs();
-    let minutes = t / 60;
-    let seconds = t % 60;
-
-    format!("{} minutes {} seconds", minutes, seconds)
-}
-
-fn clear_and_reset() {
-    print!("{}{}", termion::clear::All, termion::cursor::Goto(1, 1));
 }
