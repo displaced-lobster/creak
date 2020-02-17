@@ -14,7 +14,7 @@ const THRESHOLD: u64 = 120;
 
 fn main() {
     let matches = clap_app!(creak =>
-        (version: "0.2.0")
+        (version: "0.3.0")
         (author: "Richard Mills <scripts.richard@gmail.com>")
         (about: "A prolonged sitter's best friend")
         (@arg quiet: -q "Stiffle output")
@@ -34,7 +34,7 @@ fn main() {
         let values = ctrlc_history.lock().unwrap().iter().map(|&e| e).collect();
 
         Terminal::clear_and_reset();
-        Terminal::generate_chart(values, THRESHOLD);
+        Terminal::barchart(values, THRESHOLD);
         process::exit(0);
     }).expect("Failed to set Ctrl-C handler");
 

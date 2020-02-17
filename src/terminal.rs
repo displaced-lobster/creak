@@ -49,4 +49,38 @@ impl Terminal {
             println!("{}{}", c, "●".repeat(n));
         }
     }
+
+    pub fn barchart(values: Vec<u64>, threshold: u64) {
+        let (height, _width) = termion::terminal_size().expect("Failed to get terminal size");
+        let mut max = 0;
+
+        for v in &values {
+            if *v > max {
+                max = *v;
+            }
+        }
+
+        let scale = (max as f64) / (height as f64);
+        let new_values: Vec<u64> = values.iter().map(|v| ((*v as f64) * scale) as u64).collect();
+        let height = height as u64;
+        let threshold = ((threshold as f64) * scale) as u64;
+
+        for y in 0..height {
+            for v in &new_values {
+                let c;
+                if *v > threshold {
+                    c = format!("{}", color::Fg(color::Red));
+                } else {
+                    c = format!("{}", color::Fg(color::Green))
+                }
+
+                if *v >= height - y {
+                    print!("{}●", c);
+                } else {
+                    print!(" ");
+                }
+            }
+            println!();
+        }
+    }
 }
