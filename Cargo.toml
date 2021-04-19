@@ -1,6 +1,6 @@
 [package]
 name = "creak"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Richard Mills <scripts.richard@gmail.com>"]
 edition = "2018"
 
@@ -10,4 +10,3 @@ edition = "2018"
 clap = "2"
 ctrlc = "3"
 notify-rust = "3"
-termion = "*"
