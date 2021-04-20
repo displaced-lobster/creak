@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate clap;
 extern crate ctrlc;
+extern crate serde;
+extern crate serde_yaml;
 
 use notify_rust::Notification;
 use std::{ thread, time };
@@ -19,14 +21,23 @@ fn main() {
         .unwrap();
     let timer = time::Duration::from_secs(duration * 60);
 
-    println!("Starting reminder to run every {} minutes", duration);
+    let f = std::fs::File::open("tasks.yaml").unwrap();
+    let data: serde_yaml::Value = serde_yaml::from_reader(f).unwrap();
+    let tasks: Vec<String> = data["tasks"]
+        .as_sequence()
+        .unwrap()
+        .iter()
+        .map(|s| { String::from(s.as_str().unwrap()) })
+        .collect();
+
+    let content = format!("{}", tasks.join("\n"));
 
     loop {
         thread::sleep(timer);
 
         match Notification::new()
-            .summary("Creak")
-            .body("Do something!")
+            .summary("Creak - TODO")
+            .body(&content)
             .appname("creak")
             .timeout(0)
             .show() {
