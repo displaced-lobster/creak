@@ -1,15 +1,10 @@
 #[macro_use]
 extern crate clap;
 extern crate ctrlc;
-extern crate serde;
-extern crate serde_yaml;
 
-use notify_rust::Notification;
-use std::{ process, thread, time };
-use std::collections::BTreeMap;
-use std::io::Write;
+use std::process;
 
-const TASKS_FILE: &str = "tasks.yaml";
+mod creak;
 
 fn main() {
     ctrlc::set_handler(move || {
@@ -43,6 +38,8 @@ fn main() {
         )
     ).get_matches();
 
+    let mut cr = creak::Creak::init().unwrap();
+
     if let Some(ref matches) = matches.subcommand_matches("add") {
         let index = matches
             .value_of("INDEX")
@@ -53,7 +50,7 @@ fn main() {
             .collect::<Vec<&str>>()
             .join(" ");
 
-        add_task(&task, index).expect("Failed to add task");
+        cr.add_task(&task, index).expect("Failed to add task");
     } else if let Some(ref matches) = matches.subcommand_matches("remove") {
         let index = matches
             .value_of("INDEX")
@@ -61,7 +58,7 @@ fn main() {
             .parse()
             .unwrap();
 
-        remove_task(index).expect("Failed to remove task");
+        cr.remove_task(index).expect("Failed to remove task");
     } else if let Some(ref matches) = matches.subcommand_matches("start") {
         let duration: u64 = matches
             .value_of("DURATION")
@@ -69,95 +66,8 @@ fn main() {
             .parse()
             .unwrap();
 
-            start_notifications(duration).expect("Failed to start notifications");
+            cr.start_notifications(duration).expect("Failed to start notifications");
     } else {
-        list_tasks().expect("Failed to lists tasks");
+        cr.list_tasks().expect("Failed to lists tasks");
     }
-}
-
-fn add_task(task: &str, index: Option<usize>) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let mut tasks = read_tasks()?;
-    let task = String::from(task);
-
-    println!("Adding task: '{}'...", task);
-
-    if let Some(index) = index {
-        tasks.insert(index, task)
-    } else {
-        tasks.push(task);
-    }
-    write_tasks(&tasks)?;
-    println!("Done");
-    Ok(())
-}
-
-fn list_tasks() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let tasks = read_tasks()?;
-
-    println!("Tasks:");
-    for (i, task) in tasks.iter().enumerate() {
-        println!("{}.\t{}", i, task);
-    }
-    Ok(())
-}
-
-fn read_tasks() -> Result<Vec<String>, Box<dyn std::error::Error + 'static>> {
-    let f = std::fs::File::open(TASKS_FILE)?;
-    let data: serde_yaml::Value = serde_yaml::from_reader(f)?;
-
-    Ok(data["tasks"]
-        .as_sequence()
-        .unwrap()
-        .iter()
-        .map(|s| { String::from(s.as_str().unwrap()) })
-        .collect()
-    )
-}
-
-fn remove_task(index: usize) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let mut tasks = read_tasks()?;
-
-    if index < tasks.len() {
-        let task = &tasks[index];
-
-        println!("Removing task: '{}'...", task);
-        tasks.remove(index);
-        write_tasks(&tasks)?;
-        println!("Done");
-    } else {
-        println!("No task with index: {}", index);
-    }
-
-    Ok(())
-}
-
-fn start_notifications(duration: u64) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let timer = time::Duration::from_secs(duration * 60);
-    let tasks = read_tasks()?;
-    let content = format!("{}", tasks.join("\n"));
-
-    loop {
-        match Notification::new()
-            .summary("Creak - Tasks")
-            .body(&content)
-            .appname("creak")
-            .timeout(0)
-            .show() {
-                _ => ()
-            }
-
-        thread::sleep(timer);
-    }
-}
-
-fn write_tasks(tasks: &Vec<String>) -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let mut map = BTreeMap::new();
-
-    map.insert("tasks".to_string(), tasks);
-
-    let s = serde_yaml::to_string(&map)?;
-    let mut f = std::fs::File::create(TASKS_FILE)?;
-
-    f.write_all(s.as_bytes())?;
-    Ok(())
 }
