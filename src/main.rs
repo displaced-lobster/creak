@@ -1,4 +1,6 @@
 #[macro_use]
+extern crate bunt;
+#[macro_use]
 extern crate clap;
 extern crate ctrlc;
 
@@ -8,7 +10,7 @@ mod creak;
 
 fn main() {
     ctrlc::set_handler(move || {
-        println!("\nStopping notifications");
+        println!("\n{$bold}Stopping notifications{/$}");
         process::exit(0);
     }).expect("Failed to set Ctrl-C handler");
 

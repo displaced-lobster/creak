@@ -15,16 +15,10 @@ pub struct Creak {
 }
 
 impl Creak {
-    pub fn init() -> Result<Creak, Box<dyn std::error::Error + 'static>> {
-        let tasks = read_tasks()?;
-
-        Ok(Creak{ tasks })
-    }
-
     pub fn add_task(&mut self, task: &str, index: Option<usize>) -> Result<(), Box<dyn std::error::Error + 'static>> {
         let task = String::from(task);
 
-        println!("Adding task: '{}'...", task);
+        println!("Adding task: {[bold]}...", task);
 
         if let Some(index) = index {
             self.tasks.insert(index, task)
@@ -36,10 +30,16 @@ impl Creak {
         self.list_tasks()
     }
 
+    pub fn init() -> Result<Creak, Box<dyn std::error::Error + 'static>> {
+        let tasks = read_tasks()?;
+
+        Ok(Creak{ tasks })
+    }
+
     pub fn list_tasks(&self) -> Result<(), Box<dyn std::error::Error + 'static>> {
-        println!("Tasks:");
+        println!("{$underline}Tasks{/$}:");
         for (i, task) in self.tasks.iter().enumerate() {
-            println!("{}.\t{}", i, task);
+            println!("{[dimmed]}.\t{[bold]}", i, task);
         }
         Ok(())
     }
@@ -48,7 +48,7 @@ impl Creak {
         if index < self.tasks.len() {
             let task = &self.tasks[index];
 
-            println!("Removing task: '{}'...", task);
+            println!("Removing task: {[bold]}...", task);
             self.tasks.remove(index);
             self.write()?;
             println!("Done");
@@ -62,6 +62,8 @@ impl Creak {
     pub fn start_notifications(&self, duration: u64) -> Result<(), Box<dyn std::error::Error + 'static>> {
         let timer = time::Duration::from_secs(duration * 60);
         let content = format!("{}", self.tasks.join("\n"));
+
+        println!("{$bold}Starting notifications{/$}");
 
         loop {
             match Notification::new()
