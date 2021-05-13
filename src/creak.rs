@@ -11,7 +11,8 @@ use std::path::{ Path, PathBuf };
 const TASKS_FILE: &str = ".creak/tasks.yaml";
 
 pub struct Creak {
-    tasks: Vec<String>
+    path: PathBuf,
+    tasks: Vec<String>,
 }
 
 impl Creak {
@@ -31,9 +32,10 @@ impl Creak {
     }
 
     pub fn init() -> Result<Creak, Box<dyn std::error::Error + 'static>> {
-        let tasks = read_tasks()?;
+        let path = task_file_path();
+        let tasks = read_tasks(&path)?;
 
-        Ok(Creak{ tasks })
+        Ok(Creak{ path, tasks })
     }
 
     pub fn list_tasks(&self) -> Result<(), Box<dyn std::error::Error + 'static>> {
@@ -42,6 +44,11 @@ impl Creak {
             println!("{[dimmed]}.\t{[bold]}", i, task);
         }
         Ok(())
+    }
+
+    pub fn print_config(&self) {
+        println!("{$underline}Configuration{/$}:");
+        println!("\tTask file: {[bold]}", self.path.as_path().display().to_string());
     }
 
     pub fn remove_task(&mut self, index: usize) -> Result<(), Box<dyn std::error::Error + 'static>> {
@@ -80,22 +87,20 @@ impl Creak {
     }
 
     fn write(&self) -> Result<(), Box<dyn std::error::Error + 'static>> {
-        let file_path = task_file_path();
         let mut map = BTreeMap::new();
 
         map.insert("tasks".to_string(), &self.tasks);
 
         let s = serde_yaml::to_string(&map)?;
-        let mut f = std::fs::File::create(file_path)?;
+        let mut f = std::fs::File::create(&self.path)?;
 
         f.write_all(s.as_bytes())?;
         Ok(())
     }
 }
 
-fn read_tasks() -> Result<Vec<String>, Box<dyn std::error::Error + 'static>> {
-    let file_path = task_file_path();
-    let f = std::fs::File::open(file_path)?;
+fn read_tasks(path: &PathBuf) -> Result<Vec<String>, Box<dyn std::error::Error + 'static>> {
+    let f = std::fs::File::open(path)?;
     let data: serde_yaml::Value = serde_yaml::from_reader(f)?;
 
     Ok(data["tasks"]

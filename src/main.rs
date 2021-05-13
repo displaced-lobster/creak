@@ -24,6 +24,10 @@ fn main() {
             (@arg TASK: +multiple +required "Task to be added")
             (@arg INDEX: -i --index +takes_value "Which index to add the task")
         )
+        (@subcommand config =>
+            (about: "show configuration")
+            (version: "0.1")
+        )
         (@subcommand list =>
             (about: "list tasks")
             (version: "0.1")
@@ -53,6 +57,8 @@ fn main() {
             .join(" ");
 
         cr.add_task(&task, index).expect("Failed to add task");
+    } else if let Some(_) = matches.subcommand_matches("config") {
+        cr.print_config();
     } else if let Some(ref matches) = matches.subcommand_matches("remove") {
         let index = matches
             .value_of("INDEX")
