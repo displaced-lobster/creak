@@ -9,6 +9,7 @@ use std::io::Write;
 use std::path::{ Path, PathBuf };
 
 const TASKS_FILE: &str = ".creak/tasks.yaml";
+const TEN_MINUTES: u64 = 10 * 60;
 
 pub struct Creak {
     path: PathBuf,
@@ -67,20 +68,33 @@ impl Creak {
     }
 
     pub fn start_notifications(&self, duration: u64) -> Result<(), Box<dyn std::error::Error + 'static>> {
-        let timer = time::Duration::from_secs(duration * 60);
-        let content = format!("{}", self.tasks.join("\n"));
+        let mut complete_count = 0;
 
         println!("{$bold}Starting notifications{/$}");
 
         loop {
-            match Notification::new()
+            let complete_content = format!("<s>{}</s>", &self.tasks[0..complete_count].join("\n"));
+            let incomplete_content = format!("{}", &self.tasks[complete_count..].join("\n"));
+            let content = match complete_count > 0 {
+                false => format!("{}", incomplete_content),
+                true => format!("{}\n{}", complete_content, incomplete_content)
+            };
+            let mut timer = time::Duration::from_secs(duration * 60);
+
+            Notification::new()
                 .summary("Creak - Tasks")
                 .body(&content)
                 .appname("creak")
                 .timeout(0)
-                .show() {
+                .action("complete", "Complete")
+                .action("snooze", "Snooze")
+                .show()?
+                .wait_for_action(|action| match action {
+                    "complete" => complete_count += 1,
+                    "snooze" => timer = time::Duration::from_secs(TEN_MINUTES),
+                    "__closed" => (),
                     _ => ()
-                }
+                });
 
             thread::sleep(timer);
         }
